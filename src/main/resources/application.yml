@@ -1,7 +1,4 @@
-logging:
-    file: "logs/messages.log"
+---
 
- spring:
-     output:
-     ansi:
-         enabled: DETECT
+logging:
+  file: logs/messages.log
