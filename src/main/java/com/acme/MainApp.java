@@ -1,15 +1,15 @@
 package com.acme;
 
-import org.apache.camel.main.Main;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 
+@SpringBootApplication
 public class MainApp
 {
     public static void main(String[] args) throws Exception
     {
-        Main main = new Main();
-        main.addRouteBuilder(new MyRouteBuilder());
-        main.run(args);
+        SpringApplication.run(MainApp.class, args);
     }
 
 }

@@ -1,0 +1,14 @@
+---
+
+irc:
+  uri: "irc:iBridge@irc.nlnog.net:6668?nickname=iBridge&channels=#testing123,#testing666&realname=Just a test"
+
+telegram:
+  uri: "telegram:bots/numbers:numberAndLetters"
+
+channel-group-mappings:
+  channels:
+    'mychan1': '-111111111' # Without a starting hash (#)
+    'mychan2': '-222222222'
+    'mychan3': '-333333333'
+
