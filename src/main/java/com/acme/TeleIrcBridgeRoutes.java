@@ -121,8 +121,18 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                         LOG.warn("Text was null, not going to relay message");
                         exchange.getOut().setBody(null);
                     } else {
+                        String userName = "";
+
+                        if (telegramMsg.getFrom().getUsername() == null ||
+                            telegramMsg.getFrom().getUsername() == "") {
+                                userName = telegramMsg.getFrom().getFirstName()
+                                            + " " +
+                                            telegramMsg.getFrom().getLastName();
+                        } else {
+                            userName  = telegramMsg.getFrom().getUsername();
+                        }
                         String combinedMsg = String.format("%s: %s",
-                                telegramMsg.getFrom().getUsername(),
+                                userName,
                                 telegramMsg.getText());
                         exchange.getOut().setHeader(
                                 IrcConstants.IRC_TARGET,
