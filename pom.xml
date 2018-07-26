@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.acme</groupId>
-    <artifactId>IrcTeleBridge</artifactId>
+    <artifactId>irctelebridge</artifactId>
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <name>IRC-Telegram bridge</name>
 
