@@ -116,6 +116,10 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                         LOG.warn("Couldn't find channel match for group: {}",
                                 telegramGroup);
                         exchange.getOut().setBody(null);
+                    } else if (telegramMsg.getText() == null ||
+                               telegramMsg.getText().length() < 1) {
+                        LOG.warn("Text was null, not going to relay message");
+                        exchange.getOut().setBody(null);
                     } else {
                         String combinedMsg = String.format("%s: %s",
                                 telegramMsg.getFrom().getUsername(),
