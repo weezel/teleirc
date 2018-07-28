@@ -125,9 +125,16 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
 
                         if (telegramMsg.getFrom().getUsername() == null ||
                             telegramMsg.getFrom().getUsername() == "") {
-                                userName = telegramMsg.getFrom().getFirstName()
-                                            + " " +
-                                            telegramMsg.getFrom().getLastName();
+                                String firstName = telegramMsg.getFrom()
+                                        .getFirstName();
+                                if (firstName == null)
+                                    firstName = "";
+                                String lastName = telegramMsg.getFrom()
+                                        .getLastName();
+                                if (lastName == null)
+                                    lastName = "";
+                                userName = String.format("%s %s",
+                                        firstName, lastName);
                         } else {
                             userName  = telegramMsg.getFrom().getUsername();
                         }
