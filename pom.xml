@@ -7,7 +7,7 @@
     <groupId>com.acme</groupId>
     <artifactId>irctelebridge</artifactId>
     <packaging>jar</packaging>
-    <version>1.0</version>
+    <version>1.0.1</version>
 
     <name>IRC-Telegram bridge</name>
 
