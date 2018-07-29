@@ -123,20 +123,23 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                     } else {
                         String userName = "";
 
-                        if (telegramMsg.getFrom().getUsername() == null ||
-                            telegramMsg.getFrom().getUsername() == "") {
+                        if (telegramMsg.getFrom().getUsername() != null) {
+                                userName  = telegramMsg.getFrom().getUsername();
+                        } else {
                                 String firstName = telegramMsg.getFrom()
                                         .getFirstName();
-                                if (firstName == null)
-                                    firstName = "";
                                 String lastName = telegramMsg.getFrom()
                                         .getLastName();
-                                if (lastName == null)
-                                    lastName = "";
-                                userName = String.format("%s %s",
-                                        firstName, lastName);
-                        } else {
-                            userName  = telegramMsg.getFrom().getUsername();
+
+                                if (firstName == null)
+                                    firstName = "";
+                                if (lastName == null) {
+                                    userName = String.format("%s",
+                                            firstName);
+                                } else {
+                                        userName = String.format("%s %s",
+                                                firstName, lastName);
+                                    }
                         }
                         String combinedMsg = String.format("%s: %s",
                                 userName,
