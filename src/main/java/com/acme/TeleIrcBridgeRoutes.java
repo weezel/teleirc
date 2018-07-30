@@ -18,7 +18,6 @@ import java.util.Map;
 public class TeleIrcBridgeRoutes extends RouteBuilder
 {
     private final Logger LOG = LoggerFactory.getLogger(TeleIrcBridgeRoutes.class);
-    private String matchingChannel;
 
     @Value("${irc.uri}")
     private String ircUri;
@@ -48,21 +47,11 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                                 ircMessage.getUser().getNick(),
                                 ircMessage.getMessage());
 
-                        matchingChannel = "";
+                        String channel = ircMessage.getTarget()
+                                .replaceAll("^#", "");
+                        String matchingGroup = matchChannelToGroup(channel);
 
-                        String strippedChan = ircMessage.getTarget().replaceAll("^#", "");
-                        for (Map.Entry<String, String> e : channelGroupMappings
-                             .getChannels().entrySet()) {
-                            if (e.getKey().equals(strippedChan)) {
-                                LOG.info("IRC channel {} equals Telegram group {}({})",
-                                        strippedChan,
-                                        e.getKey(),
-                                        e.getValue());
-                                matchingChannel = e.getValue();
-                                break;
-                            }
-                        }
-                        if (matchingChannel.equals("")) {
+                        if (matchingGroup.equals("")) {
                             LOG.warn("Couldn't find group match for channel: {}",
                                     ircMessage.getTarget());
                             exchange.getOut().setBody(null);
@@ -72,11 +61,11 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                                     ircMessage.getMessage());
 
                             OutgoingTextMessage outMsg = new OutgoingTextMessage();
-                            outMsg.setChatId(matchingChannel);
+                            outMsg.setChatId(matchingGroup);
                             outMsg.setText(combinedMsg);
                             LOG.info("IRC[{}] -> Telegram[{}]: {}",
                                     ircMessage.getTarget(),
-                                    matchingChannel,
+                                    matchingGroup,
                                     combinedMsg);
                             exchange.getOut().setBody(outMsg);
                         }
@@ -99,18 +88,10 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                     String telegramGroup = telegramMsg.getChat().getId()
                             .replaceAll("^#", "");
 
-                    for (Map.Entry<String, String> e : channelGroupMappings
-                            .getChannels().entrySet()) {
-                        if (e.getValue().equals(telegramGroup)) {
-                            LOG.info(
-                                "Telegram group {}({}) equals IRC channel {}",
-                                    telegramMsg.getChat().getTitle(),
-                                    telegramGroup,
-                                    e.getKey());
-                            matchingChannel = String.format("#%s", e.getKey());
-                            break;
-                        }
-                    }
+                    String groupName = telegramMsg.getChat().getTitle();
+                    String groupId  = telegramMsg.getChat().getId();
+                    String matchingChannel = matchGroupToChannel(
+                            groupName, groupId);
 
                     if (matchingChannel.equals("")) {
                         LOG.warn("Couldn't find channel match for group: {}",
@@ -157,5 +138,42 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                 .to(ircUri)
                 .log("Telegram -> IRC delivered");
     } // configure
+
+    public String matchChannelToGroup(String channel)
+    {
+        String matchingGroup = "";
+
+        for (Map.Entry<String, String> e : channelGroupMappings
+             .getChannels().entrySet()) {
+            if (e.getKey().equals(channel)) {
+                LOG.info("IRC channel {} equals Telegram group {}({})",
+                        channel,
+                        e.getKey(),
+                        e.getValue());
+                matchingGroup = e.getValue();
+                return matchingGroup;
+            }
+        }
+        return matchingGroup;
+    }
+
+    public String matchGroupToChannel(String groupName, String groupId)
+    {
+        String matchingChannel = "";
+
+        for (Map.Entry<String, String> e : channelGroupMappings
+                .getChannels().entrySet()) {
+            if (e.getValue().equals(groupId)) {
+                LOG.info(
+                    "Telegram group {}({}) equals IRC channel {}",
+                        groupName,
+                        groupId,
+                        e.getKey());
+                matchingChannel = String.format("#%s", e.getKey());
+                return matchingChannel;
+            }
+        }
+        return matchingChannel;
+    }
 
 }
