@@ -1,9 +1,11 @@
 package com.acme;
 
+import com.acme.telegramutils.TelegramUtils;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.irc.IrcConstants;
 import org.apache.camel.component.irc.IrcMessage;
 import org.apache.camel.component.telegram.model.IncomingMessage;
+import org.apache.camel.component.telegram.model.IncomingPhotoSize;
 import org.apache.camel.component.telegram.model.OutgoingTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -28,115 +31,125 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
     @Autowired
     private ChannelGroupMapper channelGroupMappings;
 
+    @Autowired
+    private TelegramUtils telegramUtils;
+
     @Override
     public void configure() throws Exception
     {
 
         from(ircUri)
-                .process(exchange -> {
-                    exchange.getOut().setBody(exchange.getIn().getBody());
-                    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+        .routeId("from-irc")
+        .process(exchange -> {
+                exchange.getOut().setBody(exchange.getIn().getBody());
+                exchange.getOut().setHeaders(exchange.getIn().getHeaders());
 
-                    IrcMessage ircMessage = exchange.getIn().getBody(
-                            IrcMessage.class);
-                    LOG.debug("IRC msg type {}",
-                            ircMessage.getMessageType());
-                    if (ircMessage.getMessageType().equals("PRIVMSG")) {
-                        LOG.debug("IRC [{}] {}: {}",
-                                ircMessage.getTarget(),
+                IrcMessage ircMessage = exchange.getIn().getBody(
+                        IrcMessage.class);
+                LOG.debug("[IRC] msg type {}",
+                        ircMessage.getMessageType());
+                if (ircMessage.getMessageType().equals("PRIVMSG")) {
+                    LOG.debug("[IRC {}] {}: {}",
+                            ircMessage.getTarget(),
+                            ircMessage.getUser().getNick(),
+                            ircMessage.getMessage());
+
+                    String channel = ircMessage.getTarget()
+                            .replaceAll("^#", "");
+                    String matchingGroup = matchChannelToGroup(channel);
+
+                    if (matchingGroup.equals("")) {
+                        LOG.warn("Couldn't find group match for channel: {}",
+                                ircMessage.getTarget());
+                        exchange.getOut().setBody(null);
+                    } else {
+                        String combinedMsg = String.format("<%s> %s",
                                 ircMessage.getUser().getNick(),
                                 ircMessage.getMessage());
 
-                        String channel = ircMessage.getTarget()
-                                .replaceAll("^#", "");
-                        String matchingGroup = matchChannelToGroup(channel);
-
-                        if (matchingGroup.equals("")) {
-                            LOG.warn("Couldn't find group match for channel: {}",
-                                    ircMessage.getTarget());
-                            exchange.getOut().setBody(null);
-                        } else {
-                            String combinedMsg = String.format("<%s> %s",
-                                    ircMessage.getUser().getNick(),
-                                    ircMessage.getMessage());
-
-                            OutgoingTextMessage outMsg = new OutgoingTextMessage();
-                            outMsg.setChatId(matchingGroup);
-                            outMsg.setText(combinedMsg);
-                            LOG.info("IRC[{}] -> Telegram[{}]: {}",
-                                    ircMessage.getTarget(),
-                                    matchingGroup,
-                                    combinedMsg);
-                            exchange.getOut().setBody(outMsg);
-                        }
-                    } else {
-                        LOG.info("IRC other msg: {}", ircMessage.getMessage());
-                        exchange.getOut().setBody(null);
+                        OutgoingTextMessage outMsg = new OutgoingTextMessage();
+                        outMsg.setChatId(matchingGroup);
+                        outMsg.setText(combinedMsg);
+                        LOG.info("[IRC {}] -> Telegram[{}]: {}",
+                                ircMessage.getTarget(),
+                                matchingGroup,
+                                combinedMsg);
+                        exchange.getOut().setBody(outMsg);
                     }
-                })
-                .to(telegramUri)
-                .log("IRC -> Telegram delivered");
+                } else {
+                    LOG.info("IRC other msg: {}", ircMessage.getMessage());
+                    exchange.getOut().setBody(null);
+                }
+            })
+            .to(telegramUri)
+            .log("[IRC] -> Telegram delivered");
 
         from(telegramUri)
-                .log("Incoming Telegram message")
-                .process(exchange -> {
-                    exchange.getOut().setBody(exchange.getIn().getBody());
-                    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+        .routeId("from-telegram")
+        .log("[Telegram] Incoming message")
+        .process(exchange -> {
+                exchange.getOut().setBody(exchange.getIn().getBody());
+                exchange.getOut().setHeaders(exchange.getIn().getHeaders());
 
-                    IncomingMessage telegramMsg = exchange.getIn().getBody(
-                            IncomingMessage.class);
-                    String telegramGroup = telegramMsg.getChat().getId()
-                            .replaceAll("^#", "");
+                IncomingMessage telegramMsg = exchange.getIn().getBody(
+                        IncomingMessage.class);
+                String telegramGroup = telegramMsg.getChat().getId()
+                        .replaceAll("^#", "");
 
-                    String groupName = telegramMsg.getChat().getTitle();
-                    String groupId  = telegramMsg.getChat().getId();
-                    String matchingChannel = matchGroupToChannel(
-                            groupName, groupId);
+                String groupName = telegramMsg.getChat().getTitle();
+                String groupId  = telegramMsg.getChat().getId();
+                String matchingChannel = matchGroupToChannel(
+                        groupName, groupId);
+                List<IncomingPhotoSize> image = telegramMsg.getPhoto();
 
-                    if (matchingChannel.equals("")) {
-                        LOG.warn("Couldn't find channel match for group: {}",
-                                telegramGroup);
-                        exchange.getOut().setBody(null);
-                    } else if (telegramMsg.getText() == null ||
-                               telegramMsg.getText().length() < 1) {
-                        LOG.warn("Text was null, not going to relay message");
-                        exchange.getOut().setBody(null);
+                if (matchingChannel.equals("")) {
+                    LOG.warn("Couldn't find channel match for group: {}",
+                            telegramGroup);
+                    exchange.getOut().setBody(null);
+                } else if (telegramMsg.getPhoto() != null) {
+                    LOG.info("[Telegram] Message contains photos, downloading");
+                    telegramUtils.downloadPhotos(telegramMsg.getPhoto());
+                    LOG.info("[Telegram] Photos downloaded");
+                } else if (telegramMsg.getText() == null ||
+                           telegramMsg.getText().length() < 1) {
+                    LOG.warn("[Telegram] Text was null, abort");
+                    exchange.getOut().setBody(null);
+                } else {
+                    String userName = "";
+
+                    if (telegramMsg.getFrom().getUsername() != null) {
+                            userName  = telegramMsg.getFrom().getUsername();
                     } else {
-                        String userName = "";
+                            String firstName = telegramMsg.getFrom()
+                                    .getFirstName();
+                            String lastName = telegramMsg.getFrom()
+                                    .getLastName();
 
-                        if (telegramMsg.getFrom().getUsername() != null) {
-                                userName  = telegramMsg.getFrom().getUsername();
-                        } else {
-                                String firstName = telegramMsg.getFrom()
-                                        .getFirstName();
-                                String lastName = telegramMsg.getFrom()
-                                        .getLastName();
-
-                                if (firstName == null)
-                                    firstName = "";
-                                if (lastName == null) {
-                                    userName = String.format("%s",
-                                            firstName);
-                                } else {
-                                        userName = String.format("%s %s",
-                                                firstName, lastName);
-                                    }
-                        }
-                        String combinedMsg = String.format("%s: %s",
-                                userName,
-                                telegramMsg.getText());
-                        exchange.getOut().setHeader(
-                                IrcConstants.IRC_TARGET,
-                                matchingChannel);
-                        LOG.info("Telegram[{}] -> IRC[{}]: {}",
-                                telegramMsg.getChat().getTitle(),
-                                matchingChannel,
-                                combinedMsg);
-                        exchange.getOut().setBody(combinedMsg);
+                            if (firstName == null)
+                                firstName = "";
+                            if (lastName == null) {
+                                userName = String.format("%s",
+                                        firstName);
+                            } else {
+                                    userName = String.format("%s %s",
+                                            firstName, lastName);
+                                }
                     }
-                })
-                .to(ircUri)
-                .log("Telegram -> IRC delivered");
+                    String combinedMsg = String.format("%s: %s",
+                            userName,
+                            telegramMsg.getText());
+                    exchange.getOut().setHeader(
+                            IrcConstants.IRC_TARGET,
+                            matchingChannel);
+                    LOG.info("[Telegram {}] -> IRC[{}]: {}",
+                            telegramMsg.getChat().getTitle(),
+                            matchingChannel,
+                            combinedMsg);
+                    exchange.getOut().setBody(combinedMsg);
+                }
+            })
+            .to(ircUri)
+            .log("[Telegram] -> IRC delivered");
     } // configure
 
     public String matchChannelToGroup(String channel)
