@@ -25,7 +25,7 @@ public class TelegramUtils
 {
     private final Logger LOG = LoggerFactory.getLogger(TeleIrcBridgeRoutes.class);
 
-    @Value("local.file-path")
+    @Value("${local.file-path}")
     private String localFilePath;
 
     @Value("${publish.url}")
@@ -71,15 +71,17 @@ public class TelegramUtils
                 "https://api.telegram.org/file/bot%s/%s",
                 telegramToken,
                 filePath));
-            LOG.info("[Telegram] downloading image: {}",
-                photoUrl);
 
             String fileExt = FilenameUtils.getExtension(filePath);
             String localFileAbsPath = String.format("%s/%s.%s",
                 localFilePath,
                 photo.getFileId(),
                 fileExt);
+            LOG.info("[Telegram] downloading photo: {} to {}",
+                photoUrl,
+                localFileAbsPath);
             FileUtils.copyURLToFile(photoUrl, new File(localFileAbsPath));
+
             publishUrlAbsPath = String.format("%s/%s.png", publishUrl,
                 photo.getFileId());
         } catch (MalformedURLException e) {

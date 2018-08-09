@@ -100,22 +100,26 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                 String groupId  = telegramMsg.getChat().getId();
                 String matchingChannel = matchGroupToChannel(
                         groupName, groupId);
+                String publishUrl = "";
                 List<IncomingPhotoSize> image = telegramMsg.getPhoto();
 
                 if (matchingChannel.equals("")) {
                     LOG.warn("Couldn't find channel match for group: {}",
                             telegramGroup);
                     exchange.getOut().setBody(null);
-                } else if (telegramMsg.getPhoto() != null) {
-                    LOG.info("[Telegram] Message contains photos, downloading");
-                    telegramUtils.downloadPhotos(telegramMsg.getPhoto());
-                    LOG.info("[Telegram] Photos downloaded");
-                } else if (telegramMsg.getText() == null ||
-                           telegramMsg.getText().length() < 1) {
+                } else if (telegramMsg.getText() == null &&
+                           telegramMsg.getPhoto() == null) {
                     LOG.warn("[Telegram] Text was null, abort");
                     exchange.getOut().setBody(null);
                 } else {
                     String userName = "";
+
+                    if (telegramMsg.getPhoto() != null) {
+                        LOG.info("[Telegram] Message contains a photo");
+                        publishUrl = telegramUtils.downloadPhotos(
+                                telegramMsg.getPhoto());
+                        LOG.info("[Telegram] Photo downloaded");
+                    }
 
                     if (telegramMsg.getFrom().getUsername() != null) {
                             userName  = telegramMsg.getFrom().getUsername();
@@ -135,9 +139,24 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                                             firstName, lastName);
                                 }
                     }
-                    String combinedMsg = String.format("%s: %s",
-                            userName,
-                            telegramMsg.getText());
+
+                    String msg = telegramMsg.getText() != null ?
+                                    telegramMsg.getText() : "";
+                    String combinedMsg = "";
+
+                    // FIXME It seems that get|set caption is not implemented for
+                    // inocming messages, it exists for outgoing messages though
+                    if (msg.length() > 1) {
+                        combinedMsg = String.format("%s: %s %s",
+                                userName,
+                                msg,
+                                publishUrl);
+                    } else {
+                        combinedMsg = String.format("%s: %s",
+                                userName,
+                                publishUrl);
+                    }
+
                     exchange.getOut().setHeader(
                             IrcConstants.IRC_TARGET,
                             matchingChannel);
