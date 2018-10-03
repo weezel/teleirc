@@ -72,7 +72,8 @@ public class TelegramUtils
                 telegramToken,
                 filePath));
 
-            String fileExt = FilenameUtils.getExtension(filePath);
+            String fileExt = (FilenameUtils.getExtension(filePath) != "") ?
+                    FilenameUtils.getExtension(filePath) : "png";
             String localFileAbsPath = String.format("%s/%s.%s",
                 localFilePath,
                 photo.getFileId(),
@@ -82,8 +83,10 @@ public class TelegramUtils
                 localFileAbsPath);
             FileUtils.copyURLToFile(photoUrl, new File(localFileAbsPath));
 
-            publishUrlAbsPath = String.format("%s/%s.png", publishUrl,
-                photo.getFileId());
+            publishUrlAbsPath = String.format("%s/%s.%s",
+                    publishUrl,
+                    photo.getFileId(),
+                    fileExt);
         } catch (MalformedURLException e) {
             LOG.warn("Error generating URL: {}", e);
         } catch (IOException e) {
