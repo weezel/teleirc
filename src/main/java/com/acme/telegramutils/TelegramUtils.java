@@ -23,7 +23,7 @@ import java.util.List;
 @Component
 public class TelegramUtils
 {
-    private final Logger LOG = LoggerFactory.getLogger(TeleIrcBridgeRoutes.class);
+    private final Logger LOG = LoggerFactory.getLogger(TelegramUtils.class);
 
     @Value("${local.file-path}")
     private String localFilePath;
