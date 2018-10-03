@@ -6,7 +6,7 @@ telegram:
   uri: "telegram:bots/numbers:numberAndLetters?delay=5s"
 
 publish:
-  url: "https://example.comn/telegram-photos"
+  url: "https://example.com/telegram-photos"
 
 local:
   file-path: "/var/www/htdocs/example.com/telegram-photos"
