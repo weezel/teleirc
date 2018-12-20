@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 
 @Component
-public class TeleIrcBridgeRoutes extends RouteBuilder
+public class MainRoutes extends RouteBuilder
 {
     @Value("${irc.uri}")
     private String ircUri;

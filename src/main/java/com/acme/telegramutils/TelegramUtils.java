@@ -1,7 +1,6 @@
 package com.acme.telegramutils;
 
 
-import com.acme.TeleIrcBridgeRoutes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.component.telegram.model.IncomingPhotoSize;
