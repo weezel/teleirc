@@ -147,12 +147,12 @@ public class TeleIrcBridgeRoutes extends RouteBuilder
                     // FIXME It seems that get|set caption is not implemented for
                     // inocming messages, it exists for outgoing messages though
                     if (msg.length() > 1) {
-                        combinedMsg = String.format("%s: %s %s",
+                        combinedMsg = String.format("<%s> %s %s",
                                 userName,
                                 msg,
                                 publishUrl);
                     } else {
-                        combinedMsg = String.format("%s: %s",
+                        combinedMsg = String.format("<%s> %s",
                                 userName,
                                 publishUrl);
                     }
