@@ -2,3 +2,7 @@
 
 logging:
   file: logs/messages.log
+
+endpoints:
+    enabled: false
+    jolokia.enabled: true
