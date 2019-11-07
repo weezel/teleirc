@@ -117,8 +117,7 @@ public class TelegramMessageProcessor implements Processor
         for (Map.Entry<String, String> e : channelGroupMappings
                 .getChannels().entrySet()) {
             if (e.getValue().equals(groupId)) {
-                LOG.info(
-                        "Telegram group {}({}) equals IRC channel {}",
+                LOG.debug("Telegram group {}({}) equals IRC channel {}",
                         groupName,
                         groupId,
                         e.getKey());

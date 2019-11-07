@@ -72,7 +72,7 @@ public class IrcMessageProcessor implements Processor
         for (Map.Entry<String, String> e : channelGroupMappings
                 .getChannels().entrySet()) {
             if (e.getKey().equals(channel)) {
-                LOG.info("IRC channel {} equals Telegram group {}({})",
+                LOG.debug("IRC channel {} equals Telegram group {}({})",
                         channel,
                         e.getKey(),
                         e.getValue());
