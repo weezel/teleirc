@@ -84,6 +84,7 @@ public class TelegramMessageProcessor implements Processor
 
             String msg = telegramMsg.getText() != null ?
                     telegramMsg.getText() : "";
+            msg = msg.replaceAll("\\r?\\n", " ");
             String combinedMsg = "";
 
             // FIXME It seems that get|set caption is not implemented for
