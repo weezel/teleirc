@@ -1,6 +1,7 @@
 package com.acme.processors;
 
 import com.acme.ChannelGroupMapper;
+import com.acme.ircutils.MessageSplitter;
 import com.acme.telegramutils.TelegramUtils;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -19,12 +20,15 @@ public class TelegramMessageProcessor implements Processor
     private final Logger LOG = LoggerFactory.getLogger(getClass());
     private final ChannelGroupMapper channelGroupMappings;
     private final TelegramUtils telegramUtils;
+    private final MessageSplitter messageSplitter;
 
     public TelegramMessageProcessor(ChannelGroupMapper channelGroupMappings,
-                                    TelegramUtils telegramUtils)
+                                    TelegramUtils telegramUtils,
+                                    MessageSplitter messageSplitter)
     {
         this.channelGroupMappings = channelGroupMappings;
         this.telegramUtils = telegramUtils;
+        this.messageSplitter = messageSplitter;
     }
 
     @Override
@@ -82,7 +86,7 @@ public class TelegramMessageProcessor implements Processor
                 }
             }
 
-            String msg = telegramMsg.getText() != null ?
+            String msg = (telegramMsg.getText() != null) ?
                     telegramMsg.getText() : "";
             msg = msg.replaceAll("\\r?\\n", " ");
             String combinedMsg = "";
@@ -107,7 +111,8 @@ public class TelegramMessageProcessor implements Processor
                     telegramMsg.getChat().getTitle(),
                     matchingChannel,
                     combinedMsg);
-            exchange.getOut().setBody(combinedMsg);
+            String[] joinedMsg = messageSplitter.splitLongMsg(combinedMsg);
+            exchange.getOut().setBody(joinedMsg);
         }
     }
 

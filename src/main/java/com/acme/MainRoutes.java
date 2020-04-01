@@ -1,5 +1,6 @@
 package com.acme;
 
+import com.acme.ircutils.MessageSplitter;
 import com.acme.processors.IrcMessageProcessor;
 import com.acme.processors.TelegramMessageProcessor;
 import com.acme.telegramutils.TelegramUtils;
@@ -24,15 +25,18 @@ public class MainRoutes extends RouteBuilder
     private final String ircUri;
     private final String telegramUri;
     private final TelegramUtils telegramUtils;
+    private final MessageSplitter messageSplitter;
     private final ChannelGroupMapper channelGroupMappings;
 
     @Autowired
     public MainRoutes(TelegramUtils telegramUtils,
+                      MessageSplitter messageSplitter,
                       ChannelGroupMapper channelGroupMappings,
                       @Value("${irc.uri}") String ircUri,
                       @Value("${telegram.uri}") String telegramUri)
     {
         this.telegramUtils = telegramUtils;
+        this.messageSplitter = messageSplitter;
         this.channelGroupMappings = channelGroupMappings;
         this.ircUri = ircUri;
         this.telegramUri = telegramUri;
@@ -78,7 +82,9 @@ public class MainRoutes extends RouteBuilder
             .routeId(FROM_TELEGRAM_ROUTE_ID)
             .log("[Telegram] Incoming message")
             .process(new TelegramMessageProcessor(channelGroupMappings,
-                                                  telegramUtils))
+                                                  telegramUtils,
+                                                  messageSplitter))
+            .split(body())
             .to(ircUri)
             .log("[Telegram] -> IRC delivered");
     }
