@@ -16,7 +16,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <camel.version>2.22.0</camel.version>
         <springboot.version>2.0.3.RELEASE</springboot.version>
-        <commonsio.version>2.6</commonsio.version>
+        <commonsio.version>2.7</commonsio.version>
         <jackson.version>2.9.6</jackson.version>
     </properties>
 
