@@ -1,3 +1,8 @@
+# !! Obsoleted repository !!
+Too much burden to keep this updated: Camel migration to version 3, JDK
+migration and nasty log RCE. Time to say good bye.
+
+
 # TeleIRC Bridge
 
 ## Dependencies
